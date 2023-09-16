@@ -17,7 +17,6 @@ class Users(Base):
     is_active = Column(Boolean, default=False)
     address_id = Column(Integer, ForeignKey("address.id"), nullable=True)
 
-    # I don't know what is this shit
     todos = relationship("Todos", back_populates="owner")
     address = relationship("address", back_populates="user_address")
 
@@ -31,7 +30,6 @@ class Todos(Base):
     complete = Column(Boolean, default=False)
     user_id = Column(Integer, ForeignKey("users.id"))
 
-    # also this shit below
     owner = relationship("Users", back_populates="todos")
 
 
