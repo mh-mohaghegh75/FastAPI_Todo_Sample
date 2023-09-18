@@ -4,14 +4,14 @@ from fastapi import Depends, APIRouter, HTTPException
 from fastapi.encoders import jsonable_encoder
 
 import model
-from database import SessionLocal, db_engine
+from database import SessionLocal
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from auth import get_current_user
+from routers.auth import get_current_user
 
 sys.path.append("..")
 
-router = APIRouter(prefix="/", tags=["address"], responses={404: {"description": "Not Found"}})
+router = APIRouter(prefix="/address", tags=["address"], responses={404: {"description": "Not Found"}})
 
 
 def get_db():
@@ -50,7 +50,7 @@ async def create_address(address: Address,
 
     user_model = db.query(model.Users).filter(model.Users.id == user.get("id")).first()
 
-    user_model.address_id == address_model.id
+    user_model.address_id = address_model.id
 
     db.add(user_model)
     db.commit()

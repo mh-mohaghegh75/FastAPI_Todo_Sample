@@ -1,6 +1,6 @@
 import sys
 from typing import Optional
-from fastapi import HTTPException, status, Form, Depends, APIRouter
+from fastapi import HTTPException, status, Form, Depends, APIRouter, Request
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from enum import Enum
@@ -10,10 +10,14 @@ import model
 from database import db_engine, get_db
 from sqlalchemy.orm import Session
 from routers.auth import get_current_user
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 sys.path.append("..")
 
 router = APIRouter(prefix="/todos", tags=["todos"], responses={404: {"user": "Not Found"}})
+
+templates = Jinja2Templates(directory="templates")
 
 BOOKS = []
 
@@ -38,6 +42,11 @@ class DirectionName(str, Enum):
     south = "South"
     west = "West"
     east = "East"
+
+
+@router.get("/test")
+async def test(request: Request):
+    return templates.TemplateResponse("home.html", {"request": request})
 
 
 # Migration api
