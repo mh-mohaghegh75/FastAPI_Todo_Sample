@@ -46,7 +46,7 @@ class DirectionName(str, Enum):
 
 @router.get("/test")
 async def test(request: Request):
-    return templates.TemplateResponse("home.html", {"request": request})
+    return templates.TemplateResponse("register.html", {"request": request})
 
 
 # Migration api
