@@ -44,9 +44,19 @@ class DirectionName(str, Enum):
     east = "East"
 
 
-@router.get("/test")
+@router.get("/", response_class=HTMLResponse)
+async def read_all_by_user(request: Request):
+    return templates.TemplateResponse("home.html", {"request": request})
+
+
+@router.get("/add-todo", response_class=HTMLResponse)
 async def test(request: Request):
-    return templates.TemplateResponse("register.html", {"request": request})
+    return templates.TemplateResponse("add-todo.html", {"request": request})
+
+
+@router.get("/edit-todo", response_class=HTMLResponse)
+async def test(request: Request):
+    return templates.TemplateResponse("edit-todo.html", {"request": request})
 
 
 # Migration api

@@ -1,9 +1,11 @@
 import sys
-from fastapi import status, Depends, HTTPException, APIRouter
+from fastapi import status, Depends, HTTPException, APIRouter, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
 from datetime import datetime, timedelta
-from fastapi.responses import JSONResponse
+
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
@@ -18,6 +20,8 @@ SECRET_KEY = "firsttry"
 ALGORITHM = "HS256"
 
 router = APIRouter(prefix="/auth", tags=["auth"], responses={401: {"user": "Not Authorized"}})
+
+templates = Jinja2Templates(directory="templates")
 
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -104,3 +108,13 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     token_expire = timedelta(minutes=20)
     token = create_access_token(user.username, user.id, expires_delta=token_expire)
     return {"token": token}
+
+
+@router.get("/", response_class=HTMLResponse)
+async def auth_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+
+@router.get("/register", response_class=HTMLResponse)
+async def test(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
