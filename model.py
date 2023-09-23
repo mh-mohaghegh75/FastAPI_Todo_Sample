@@ -18,7 +18,7 @@ class Users(Base):
     address_id = Column(Integer, ForeignKey("address.id"), nullable=True)
 
     todos = relationship("Todos", back_populates="owner")
-    address = relationship("address", back_populates="user_address")
+    address = relationship("Address", back_populates="user_address")
 
 
 class Todos(Base):
