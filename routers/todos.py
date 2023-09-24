@@ -97,12 +97,27 @@ async def delete_todo(request: Request, todo_id: int, db: Session = Depends(get_
     todo_model = db.query(model.Todos).filter(model.Todos.id == todo_id).filter(model.Todos.user_id == 1).first()
 
     if todo_model is None:
-        return RedirectResponse(url="/todos", status_code=status.HTTP_302_FOUND)
+        return RedirectResponse(url="/todos", status_code=status.HTTP_404_NOT_FOUND)
     db.delete(todo_model)
     db.commit()
 
     return RedirectResponse(url="/todos", status_code=status.HTTP_302_FOUND)
 
+
+@router.get("/complete/{todo_id}", response_class=HTMLResponse)
+async def complete_todo(request: Request, todo_id: int, db: Session = Depends(get_db)):
+    todo_model = db.query(model.Todos).filter(model.Todos.id == todo_id).first()
+    if todo_model is None:
+        return RedirectResponse(url="/todos", status_code=status.HTTP_404_NOT_FOUND)
+    todo_model.complete = not todo_model.complete
+
+    db.add(todo_model)
+    db.commit()
+
+    return RedirectResponse(url="/todos", status_code=status.HTTP_302_FOUND)
+
+
+########################################
 
 # Migration api
 @router.get("/createdb")
