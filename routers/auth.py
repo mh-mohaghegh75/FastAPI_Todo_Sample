@@ -1,5 +1,5 @@
 import sys
-from fastapi import status, Depends, HTTPException, APIRouter, Request
+from fastapi import status, Depends, HTTPException, APIRouter, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from fastapi.responses import JSONResponse, HTMLResponse
@@ -11,6 +11,8 @@ from pydantic import BaseModel
 from typing import Optional
 from passlib.context import CryptContext
 from jose import jwt, JWTError
+from starlette.responses import RedirectResponse
+
 from database import get_db
 import model
 
@@ -35,7 +37,7 @@ class LoginForm:
         self.password: Optional[str] = None
 
     async def create_oauth_form(self):
-        form = await  self.request.form()
+        form = await self.request.form()
         self.username = form.get("email")
         self.password = form.get("password")
 
@@ -50,7 +52,7 @@ class CreateUser(BaseModel):
     is_admin: bool
 
 
-def get_password_has(password):
+def get_password_hash(password):
     return bcrypt_context.hash(password)
 
 
@@ -101,7 +103,7 @@ async def create_new_user(create_user: CreateUser, db: Session = Depends(get_db)
     create_user_model.username = create_user.username
     create_user_model.first_name = create_user.first_name
     create_user_model.last_name = create_user.last_name
-    create_user_model.hashed_password = get_password_has(create_user.password)
+    create_user_model.hashed_password = get_password_hash(create_user.password)
     create_user_model.phone = create_user.phone
     create_user_model.is_admin = create_user.is_admin
     create_user_model.is_active = False
@@ -112,14 +114,18 @@ async def create_new_user(create_user: CreateUser, db: Session = Depends(get_db)
 
 
 @router.post("/token")
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+async def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestForm = Depends(),
+                                 db: Session = Depends(get_db)):
     user = authenticate_user(form_data.username, form_data.password, db)
     if not user:
-        return JSONResponse(content=jsonable_encoder({"Message": "Uer Not Found"}),
-                            status_code=status.HTTP_404_NOT_FOUND)
-    token_expire = timedelta(minutes=20)
+        return False
+        # return JSONResponse(content=jsonable_encoder({"Message": "Uer Not Found"}),
+        #                     status_code=status.HTTP_404_NOT_FOUND)
+    token_expire = timedelta(minutes=30)
     token = create_access_token(user.username, user.id, expires_delta=token_expire)
-    return {"token": token}
+
+    response.set_cookie(key="access_token", value=token, httponly=True)
+    return True
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -127,6 +133,24 @@ async def auth_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 
+@router.post("/", response_class=HTMLResponse)
+async def login(request: Request, db: Session = Depends(get_db)):
+    try:
+        form = LoginForm(request)
+        await form.create_oauth_form()
+        response = RedirectResponse(url="/todos", status_code=status.HTTP_302_FOUND)
+
+        validate_user_cookie = await login_for_access_token(response=response, form_data=form, db=db)
+
+        if not validate_user_cookie:
+            msg = "Incorrect Username or Password"
+            return templates.TemplateResponse("login.html", {"request": request, "msg": msg})
+        return response
+    except HTTPException:
+        msg = "Unknown Error"
+        return templates.TemplateResponse("login.html", {"request": request, "msg": msg})
+
+
 @router.get("/register", response_class=HTMLResponse)
-async def test(request: Request):
+async def register(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
