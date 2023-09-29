@@ -1,5 +1,5 @@
 import sys
-from fastapi import status, Depends, HTTPException, APIRouter, Request, Response
+from fastapi import status, Depends, HTTPException, APIRouter, Request, Response, Form
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from fastapi.responses import JSONResponse, HTMLResponse
@@ -164,3 +164,34 @@ async def logout(request: Request):
 @router.get("/register", response_class=HTMLResponse)
 async def register(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
+
+
+@router.post("/register", response_class=HTMLResponse)
+async def register_user(request: Request, email: str = Form(), username: str = Form(),
+                        firstname: str = Form(), lastname: str = Form(),
+                        password: str = Form(), password2: str = Form(),
+                        db: Session = Depends(get_db)):
+    validation1 = db.query(model.Users).filter(model.Users.username == username).first()
+    validation2 = db.query(model.Users).filter(model.Users.email == email).first()
+
+    if password != password2 or validation1 is not None or validation2 is not None:
+        msg = "Invalid registration request"
+        return templates.TemplateResponse("register.html", {"request": request, "msg": msg})
+
+    user_model = model.Users()
+    user_model.username = username
+    user_model.email = email
+    user_model.first_name = firstname
+    user_model.last_name = lastname
+    user_model.is_admin = False
+    user_model.phone = "something"
+    user_model.address_id = 1
+
+    hash_password = get_password_hash(password)
+    user_model.hashed_password = hash_password
+    user_model.is_active = True
+
+    db.add(user_model)
+    db.commit()
+    msg = "User Successfully created"
+    return templates.TemplateResponse("Login.html", {"request": request, "msg": msg})
